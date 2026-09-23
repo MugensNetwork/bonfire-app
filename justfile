@@ -1714,7 +1714,16 @@ shell:
 	{{cmd}} {{args}}
 
 @docker-compose *args='':
+	just _docker-network
 	just docker compose {{args}}
+
+# podman-compose reads the interpolated `external: "false"` in docker-compose.yml as a truthy string.
+_docker-network:
+	@[ "$DOCKER_EXT_NETWORK_BOOL" = "false" ] \
+	  && ! docker network inspect "$DOCKER_EXT_NETWORK" >/dev/null 2>&1 \
+	  && docker compose version 2>&1 | grep -qi podman \
+	  && (echo "Creating the $DOCKER_EXT_NETWORK network for podman-compose..." && docker network create "$DOCKER_EXT_NETWORK" >/dev/null) \
+	  || true
 
 @docker-stop:
 	just docker compose stop
